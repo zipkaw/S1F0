@@ -30,7 +30,7 @@ module control #(
     input [DATA_W - 1:0] data_ALUresult,
 
     /*output and input on GPR bus*/
-    input [DATA_W - 1:0] data_GPRin;
+    input [DATA_W - 1:0] data_GPRin,
     output reg [DATA_W - 1:0] data_GPRout,
     output reg [ADDR_W - 1:0] addr_GPR
 

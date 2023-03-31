@@ -21,7 +21,7 @@
 `define REG_AX8   4'd15
 
 module GPR #(
-    parameter DATA_W = 14, ADDR_W = 12, REG_N = 16, REG_W = 4;
+    parameter DATA_W = 14, ADDR_W = 12, REG_N = 16, REG_W = 4
 ) (
     input clk,
     input [ADDR_W - 1:0] address, 

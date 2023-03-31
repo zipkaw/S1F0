@@ -1,5 +1,4 @@
-`include "opcodes.v"
-module ALU #(parameter DATA_W = 14)(
+module ALU #(parameter DATA_W = 12)(
     input [DATA_W - 1:0] data1, 
     input [DATA_W - 1:0] data2, 
     input [3:0] opcode,

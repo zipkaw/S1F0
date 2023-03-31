@@ -1,0 +1,76 @@
+module cpu #(
+    parameter DATA_W = 14, ADDR_W = 12
+) (
+    input clk,
+    input reset
+);
+
+    reg [DATA_W - 1:0] data_in;
+
+    /*output on general bus*/
+    reg [DATA_W - 1:0] data_out;
+    reg [ADDR_W - 1:0] addr_out;
+    /* control bus*/
+    reg [3:0] opcode;
+    
+    reg rom_rd;
+    reg ram_rd;
+    
+    reg ram_wr;
+    
+    reg GPR_rd;
+    reg GPR_wr;
+    /*output on ALU bus*/
+    reg [DATA_W - 1:0] data_ALU0;
+    reg [DATA_W - 1:0] data_ALU1;
+    reg [DATA_W - 1:0] data_ALUresult;
+
+    /*output and input on GPR bus*/
+    reg [DATA_W - 1:0] data_GPRin;
+    reg [DATA_W - 1:0] data_GPRout;
+    reg [ADDR_W - 1:0] addr_GPR;
+
+    reg [DATA_W - 1:0] data_bus;
+
+    control UUT(.clk(clk), 
+                .reset(reset),
+                .data_in(data_in), 
+                .data_out(data_out), 
+                .addr_out(addr_out), 
+                .opcode(opcode),
+                .rom_rd(rom_rd),
+                .ram_rd(ram_rd), 
+                .ram_wr(ram_wr),
+                .GPR_rd(GPR_rd), 
+                .GPR_wr(GPR_wr), 
+                .data_ALU0(data_ALU0), 
+                .data_ALU1(data_ALU1), 
+                .data_ALUresult(data_ALUresult),
+                .data_GPRin(data_GPRin),
+                .data_GPRout(data_GPRout),
+                .addr_out(addr_out)); 
+
+    rom ROM(.data(data_bus), .address(addr_out), .clk(clk), .wren(ram_wr)); 
+    ram RAM(.data(data_bus), .address(addr_out), .clk(clk), .rden(rom_rd)); 
+    stack STACK(.clk(clk), .opcode(opcode), .push(data_bus), .pop(data_bus)); 
+    ALU ALU(.opcode(opcode), .data1(data_ALU0), .data2(data_ALU1), .result(data_ALUresult)); 
+    GPR GPR(.GPR_wr(GPR_wr), .GPR_rd(GPR_rd), .data_in(data_GPRout), .data_out(data_GPRin), .address(addr_GPR)); 
+    /*
+        control unit connected all modules together
+        control signals: 
+            -[3:0]opcodes
+            -ram_rd, ram_wr
+            -rom_rd
+            -GPR_rd, GPR_wr
+        data buses:
+            - ALU0, ALU1, ALUresult
+            - GPRin, GPRout 
+            - data_in, data_out
+        addres buses: 
+            - addr_GPR
+            - addr_out
+    */
+    control CU(); 
+    
+
+endmodule

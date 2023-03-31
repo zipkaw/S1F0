@@ -1,4 +1,3 @@
-`include "opcodes.v"
 module stack #(parameter DATA_W = 14, VOLUME = 12)(
     input clk,
     input [3:0] opcode,

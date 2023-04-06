@@ -5,7 +5,6 @@ module control #(
    parameter ADDR_W = 12
 ) (
     input clk, reset,
-    
     input [DATA_W - 1:0] data_in, 
     input [DATA_W - 1:0] data_GPRin,
     input [DATA_W - 1:0] data_ALUresult,
@@ -28,7 +27,7 @@ module control #(
     output reg [DATA_W - 1:0] data_GPRout,
     output reg [ADDR_W - 1:0] addr_GPR
 ); 
-    reg [DATA_W - 1:0] command [0:2];
+    reg [DATA_W - 1:0] command [0:1];
     reg [ADDR_W - 1:0] IP;
     reg [8:0] FLAG; 
     reg [3:0] latency_counter; 
@@ -36,17 +35,19 @@ module control #(
     reg [3:0] OP; 
     reg [ADDR_W - 1:0] address; 
 
-    localparam READ_ROM_LAT = 2;
+    localparam READ_ROM_LAT = 3;
 
     localparam HLT = 0;
     localparam READ_ROM = 1, DECODE = 2;
     localparam WRITE = 3;
     initial begin
         state <= 0; 
+        IP <= 0; 
     end
 
     always @(posedge clk ) begin
-			case (OP)
+			
+            case (OP)
             `OP_JMP: begin
                 IP <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
             end
@@ -73,8 +74,7 @@ module control #(
                 latency_counter <= latency_counter - 1;
             end
             case (state)
-                HLT: begin
-//                    if(OP != `OP_HLT) begin 
+                HLT: begin 
                     latency_counter <= READ_ROM_LAT; 
                     state <= READ_ROM;
                     rom_rd <= 1'b0;
@@ -84,8 +84,6 @@ module control #(
 
                     GPR_rd <= 1'b0;
                     GPR_wr <= 1'b0;        
-//                    end
-                    //opcode <= `OP_HLT;
                 end
                 READ_ROM: begin
                     if (latency_counter == 0) begin
@@ -94,8 +92,10 @@ module control #(
                     end else begin
                         rom_rd <= 1'b1;
                         addr_out <= IP;
-                        command[(READ_ROM_LAT-1)-latency_counter] <= data_in; 
-                        IP <= IP + 1;
+                        command[READ_ROM_LAT - latency_counter-1] <= data_in;
+                        if (latency_counter - 1 != 0) begin
+                            IP <= IP + 1;
+                        end  
                     end
                 end
                 DECODE: begin
@@ -162,9 +162,11 @@ module control #(
                             addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
                             data_out <= data_GPRin;
                         end
-                        `OP_MOV_SR: begin
+                        `OP_MOV_SA: begin
                             ram_rd <= 1'b1;
                             GPR_wr <= 1'b1;
+                            addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
+                            data_GPRout = data_in; 
                         end 
                         `OP_XOR_SR, `OP_SRA_SR, `OP_NAND_SR: begin
                             GPR_wr <= 1'b1;

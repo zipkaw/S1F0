@@ -9,7 +9,7 @@ module controltb;
     localparam DATA_W = 14;
     localparam ADDR_W = 12;
     reg clk, reset;
-    reg [DATA_W - 1:0] data_in;
+    wire [DATA_W - 1:0] data_in;
     reg [DATA_W - 1:0] data_ALUresult;
     reg [DATA_W - 1:0] data_GPRin;
 
@@ -50,19 +50,25 @@ module controltb;
                 .data_GPRin(data_GPRin),
                 .data_GPRout(data_GPRout),
                 .addr_GPR(addr_GPR)); 
- 
+    
+    rom ROM(.address(addr_out),
+            .clk(clk), 
+            .rden(rom_rd),
+            .data(data_in)); 
+
     initial begin
         clk <= 0;
 		reset <= 0;
-        data_in <= 14'd0;
+        //data_in <= 14'd0;
         data_ALUresult <= 14'd0;
-
         data_GPRin <= 14'd0;
-
 	end
+
     initial begin
         #5 reset <= 1'b1; 
         #5 reset <= 1'b0; 
+        //#5  data_in <= 14'b0001_0000_000000;
+        //#10 data_in <= 14'b000111_00000000;
     end
 
     initial begin

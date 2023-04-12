@@ -10,8 +10,7 @@ module controltb;
     localparam ADDR_W = 12;
     reg clk, reset;
     wire [DATA_W - 1:0] data_in;
-    reg [DATA_W - 1:0] data_ALUresult;
-    reg [DATA_W - 1:0] data_GPRin;
+    wire [DATA_W - 1:0] data_ALUresult;
 
     /*output on general bus*/
     wire [DATA_W - 1:0] data_out;
@@ -30,6 +29,7 @@ module controltb;
     wire [DATA_W - 1:0] data_ALU1;
 
     /*output and input on GPR bus*/
+    wire [DATA_W - 1:0] data_GPRin;
     wire [DATA_W - 1:0] data_GPRout;
     wire [ADDR_W - 1:0] addr_GPR;
 
@@ -55,13 +55,27 @@ module controltb;
             .clk(clk), 
             .rden(rom_rd),
             .data(data_in)); 
+    
+    ram RAM(.address(addr_out),
+            .clk(clk), 
+            .rden(ram_rd),
+            .wren(ram_wr), 
+            .q(data_in),
+            .data(data_out));
+
+    GPR gpr(.clk(clk),
+            .address(addr_GPR), 
+            .data_in(data_GPRout), 
+            .data_out(data_GPRin), 
+            .GPR_rd(GPR_rd), 
+            .GPR_wr(GPR_wr));
 
     initial begin
         clk <= 0;
 		reset <= 0;
         //data_in <= 14'd0;
-        data_ALUresult <= 14'd0;
-        data_GPRin <= 14'd0;
+        //data_ALUresult <= 14'd0;
+        //data_GPRin <= 14'd0;
 	end
 
     initial begin

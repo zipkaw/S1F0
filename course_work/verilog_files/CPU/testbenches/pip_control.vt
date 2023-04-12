@@ -1,0 +1,67 @@
+`timescale 1ps/1ps
+`include "../memory/rom.v"
+`include "./commands_rom.v"
+`include "./READ_ROM.v"
+
+module pip_control;
+    localparam DATA_W = 14;
+    localparam ADDR_W = 12;
+
+    reg clk, reset;
+    wire [DATA_W - 1:0] data_in;
+    wire [DATA_W*2 - 1:0] data_out;
+    wire [ADDR_W - 1:0] addr_out;
+    wire rom_rd;
+    wire comm_write;
+    wire comm_read;
+    wire pause_READ;
+    wire pause_DECODE;
+
+    pipelined_control control(
+        .clk(clk),
+        .reset(reset),
+        .addr_out(addr_out),
+        .rom_rd(rom_rd),
+        .comm_write(comm_write),
+        .pause_READ(pause_READ)
+    );
+
+    commands_rom rom_reg(
+        .clk(clk), 
+        .reset(reset),
+        .command_in(data_in),
+        .comm_write(comm_write), 
+        .comm_read(comm_read), 
+        .command_out(data_out),
+        .pause_READ(pause_READ), 
+	.pause_DECODE(pause_DECODE)
+    );
+	 
+    rom ROM(.address(addr_out),
+            .clk(clk), 
+            .rden(rom_rd),
+            .data(data_in)); 
+
+
+    initial begin
+        clk <= 0;
+		reset <= 0;
+	end
+
+    initial begin
+        #5 reset <= 0; 
+        #5 reset <= 1; 
+		#20 reset <= 0; 
+    end
+	 
+	 initial begin
+		  #35;
+	 end
+    initial begin
+        #1000 $stop;
+    end
+    always begin
+        #5
+        clk = ~clk; 
+    end
+endmodule

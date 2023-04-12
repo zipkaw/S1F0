@@ -33,13 +33,17 @@ module GPR #(
     reg [DATA_W - 1:0] registers[REG_N - 1:0]; 
     localparam reg_offset = ADDR_W - 1;
     always @(posedge clk) begin
-        if(GPR_wr) begin
+        if (GPR_wr) begin
             registers[address[4:0]] <= data_in; 
         end
-        if (GPR_rd) begin
+        else if (GPR_rd) begin
             data_out <= registers[address[ADDR_W - 1: ADDR_W - REG_W]] + 
                         registers[address[ADDR_W - 1 - REG_W : ADDR_W - 2 * REG_W]] + 
                         registers[address[ADDR_W - 1 - 2*REG_W : ADDR_W - 3 * REG_W]];
         end
+    end
+
+    initial begin
+        $readmemh("GPR.mem", registers);
     end
 endmodule

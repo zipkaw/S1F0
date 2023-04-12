@@ -9,12 +9,12 @@ module ram #(parameter DATA_W = 14, ADDR_W = 12, DEPTH = ADDR_W**2)(
     reg  [DATA_W - 1:0] mem [0:DEPTH-1]; 
 
     always @(posedge clk) begin
-        if(wren)begin
+        if(wren == 1'b1)begin
             mem[address] <= data; 
         end 
     end
 
-	 assign q = (rden) ? mem[address] : 1'bz;
+	assign q = (rden == 1'b1 && wren == 1'b0) ? mem[address] : 14'bzzzzzzzzzzzzzz;
 
     initial begin
         $readmemh("ram.mem", mem);

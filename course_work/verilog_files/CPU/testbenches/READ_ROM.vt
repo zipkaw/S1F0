@@ -1,0 +1,43 @@
+`timescale 1ps/1ps
+
+module READ_ROMTB;
+localparam DATA_W = 14;    
+localparam ADDR_W = 12;
+
+    reg clk, reset;
+    wire [ADDR_W - 1:0] addr_out;
+    wire rom_rd;
+    wire comm_write;
+    
+     READ_ROM #(
+        .DATA_W(DATA_W),
+        .ADDR_W(ADDR_W)
+    )romchik(
+        .clk(clk),
+        .reset(reset),
+        .rom_rd(rom_rd),
+        .command_write(comm_write),
+        .addr_out(addr_out)
+    );
+
+    initial begin
+        clk <= 0;
+	    reset <= 0;
+	end
+
+    initial begin
+        #0 reset <= 1; 
+        #5 reset <= 0; 
+    end
+
+    initial begin
+        #1000 $stop;
+    end
+    initial begin
+        #10;
+    end
+    always begin
+        #5
+        clk = ~clk; 
+    end
+endmodule

@@ -33,9 +33,9 @@ module control #(
     reg [3:0] latency_counter; 
     reg [7:0] state; 
     reg [3:0] OP; 
-    reg [ADDR_W - 1:0] address; 
+    reg [DATA_W - 1:0] data_reg; 
 
-    localparam READ_ROM_LAT = 3;
+    localparam READ_ROM_LAT = 3, DECODE_LAT = 5, WRITE_LAT = 2;
 
     localparam HLT = 0;
     localparam READ_ROM = 1, DECODE = 2;
@@ -67,7 +67,8 @@ module control #(
             GPR_rd <= 1'b0;
             GPR_wr <= 1'b0;
             state <= HLT;
-            OP <= 1'b0; 
+            opcode <= 4'b0000;
+            OP <= 4'b0000; 
             FLAG <= 0; 
         end else begin
             if(latency_counter != 0) begin
@@ -88,6 +89,7 @@ module control #(
                 READ_ROM: begin
                     if (latency_counter == 0) begin
                         state <= DECODE;
+                        latency_counter <= DECODE_LAT;
                         rom_rd <= 1'b0;
                     end else begin
                         rom_rd <= 1'b1;
@@ -101,85 +103,97 @@ module control #(
                 DECODE: begin
                     OP <= command[0][DATA_W - 1: DATA_W - 4]; 
                     opcode <= OP;
-                    state <= WRITE;
-                    case (OP)
-                        `OP_MOV_SR,`OP_INC_SR: begin
-                            GPR_rd <= 1'b1;
-                            addr_GPR <= {command[0][DATA_W - 5: DATA_W - 9], 8'b00000000};
-                        end 
-                        `OP_MOV_SA: begin
-                            ram_rd <= 1'b1; 
-                            addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
-                        end
-                        `OP_INC_BIO, `OP_MOV_BIO: begin
-                            GPR_rd <= 1'b1;
-                            addr_GPR <= {command[0][DATA_W - 5:0], command[1][DATA_W - 1:DATA_W - 2]};
-                        end
-                        `OP_XOR_SR, `OP_SRA_SR, `OP_NAND_SR: begin
-                            GPR_rd <= 1'b1;
-                            ram_rd <= 1'b1; 
-                            addr_GPR <= {command[0][DATA_W - 5: DATA_W - 9], 8'b0};
-                            addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
-                            data_ALU0 <= data_in; 
-                            data_ALU1 <= data_GPRin; 
-                        end
-                        `OP_XOR_BIO, `OP_SRA_BIO, `OP_NAND_BIO: begin
-                            GPR_rd <= 1'b1;
-                            ram_rd <= 1'b1; 
-                            addr_GPR <= {command[0][DATA_W - 5:0], command[1][DATA_W - 1:DATA_W - 2]};
-                            addr_out <= {command[1][DATA_W - 3 : 0]};
-                            data_ALU0 <= data_in; 
-                            data_ALU1 <= data_GPRin; 
-                        end
-                        `OP_PUSH_R: begin
-                            GPR_rd <= 1'b1;
-                            addr_GPR <= {command[0][DATA_W - 5: DATA_W - 9], 8'b0};
-                            data_out <= data_GPRin;
-                        end
-                        `OP_JNZ: begin
-                            if(FLAG[0] == 1'b1) 
+                    if(latency_counter == 0) begin
+                        state <= WRITE;
+                        GPR_rd <= 1'b0;
+                        ram_rd <= 1'b0;
+                        latency_counter <= WRITE_LAT;
+                    end else begin
+                        case (OP)
+                            `OP_MOV_SR,`OP_INC_SR: begin
+                                GPR_rd <= 1'b1;
+                                addr_GPR <= {command[0][DATA_W - 5: DATA_W - 8], 8'dxxxxxxxx};
+                            end 
+                            `OP_MOV_SA: begin
+                                ram_rd <= 1'b1; 
+                                addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
+                            end
+                            `OP_INC_BIO, `OP_MOV_BIO: begin
+                                GPR_rd <= 1'b1;
+                                ram_rd <= 1'b1;
+                                addr_GPR <= {command[0][DATA_W - 5:0], command[1][DATA_W - 1:DATA_W - 2]};
+                                addr_out <= data_GPRin;
+                                data_reg <= data_in; 
+                            end
+                            `OP_XOR_SR, `OP_SRA_SR, `OP_NAND_SR: begin
+                                GPR_rd <= 1'b1;
+                                ram_rd <= 1'b1; 
+                                addr_GPR <= {command[0][DATA_W - 5: DATA_W - 8], 8'd0};
+                                addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
+                                data_ALU0 <= data_in; 
+                                data_ALU1 <= data_GPRin; 
+                            end
+                            `OP_XOR_BIO, `OP_SRA_BIO, `OP_NAND_BIO: begin
+                                GPR_rd <= 1'b1;
+                                ram_rd <= 1'b1; 
+                                addr_GPR <= {command[0][DATA_W - 5:0], command[1][DATA_W - 1:DATA_W - 2]};
+                                addr_out <= {command[1][DATA_W - 3 : 0]};
+                                data_ALU0 <= data_in; 
+                                data_ALU1 <= data_GPRin; 
+                            end
+                            `OP_PUSH_R: begin
+                                GPR_rd <= 1'b1;
+                                addr_GPR <= {command[0][DATA_W - 5: DATA_W - 8], 8'd0};
+                                data_out <= data_GPRin;
+                            end
+                            `OP_JNZ: begin
+                                if(FLAG[0] == 1'b1) 
+                                    IP <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
+                            end 
+                            `OP_JMP: begin
                                 IP <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
-                        end 
-                        `OP_JMP: begin
-                            IP <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
-                        end
-                    endcase
+                            end
+                        endcase
+                    end
                 end
                 WRITE: begin
-                    GPR_rd <= 1'b0;
-                    ram_rd <= 1'b0;
-                    state <= HLT; 
-                    case (OP)
-                        `OP_MOV_BIO: begin
-                            GPR_rd <= 1'b1;
-                            ram_wr  <= 1'b1;
-                            addr_out <= {command[1][DATA_W - 3 : 0]};
-                            data_out <= data_GPRin;
-                        end
-                        `OP_MOV_SR: begin
-                            GPR_rd <= 1'b1;
-                            ram_wr  <= 1'b1;
-                            addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
-                            data_out <= data_GPRin;
-                        end
-                        `OP_MOV_SA: begin
-                            ram_rd <= 1'b1;
-                            GPR_wr <= 1'b1;
-                            addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
-                            data_GPRout = data_in; 
-                        end 
-                        `OP_XOR_SR, `OP_SRA_SR, `OP_NAND_SR: begin
-                            GPR_wr <= 1'b1;
-                            addr_GPR <= {command[0][DATA_W - 5: DATA_W - 9], 8'b0};
-                            data_GPRout <= data_ALUresult; 
-                        end
-                        `OP_XOR_BIO, `OP_SRA_BIO, `OP_NAND_BIO: begin
-                            GPR_rd <= 1'b1;
-                            addr_GPR <= {command[0][DATA_W - 5:0], command[1][DATA_W - 1:DATA_W - 2]};
-                            addr_out <= data_GPRin[ADDR_W-1:0]; 
-                            data_out <= data_ALUresult; 
-                        end
-                    endcase
+                    if(latency_counter == 0) begin
+                        state <= HLT;
+                    end else begin
+                        case (OP)
+                            `OP_MOV_BIO: begin
+                                GPR_rd <= 1'b1;
+                                ram_wr  <= 1'b1;
+                                //addr_GPR <= {command[0][DATA_W - 5:0], command[1][DATA_W - 1:DATA_W - 2]};
+                                addr_out <= {command[1][DATA_W - 3 : 0]};
+                                data_out <= data_reg;
+                            end
+                            `OP_MOV_SR: begin
+                                GPR_rd <= 1'b1;
+                                ram_wr  <= 1'b1;
+                                addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
+                                addr_GPR <= {command[0][DATA_W - 5: DATA_W - 8], 8'd0};
+                                data_out <= data_GPRin;
+                            end
+                            `OP_MOV_SA: begin
+                                ram_rd <= 1'b1;
+                                GPR_wr <= 1'b1;
+                                addr_out <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
+                                data_GPRout <= data_in; 
+                            end
+                            `OP_XOR_SR, `OP_SRA_SR, `OP_NAND_SR: begin
+                                GPR_wr <= 1'b1;
+                                addr_GPR <= {command[0][DATA_W - 5: DATA_W - 8], 8'd0};
+                                data_GPRout <= data_ALUresult; 
+                            end
+                            `OP_XOR_BIO, `OP_SRA_BIO, `OP_NAND_BIO: begin
+                                GPR_rd <= 1'b1;
+                                addr_GPR <= {command[0][DATA_W - 5:0], command[1][DATA_W - 1:DATA_W - 2]};
+                                addr_out <= data_GPRin[ADDR_W-1:0]; 
+                                data_out <= data_ALUresult; 
+                            end
+                        endcase
+                    end
                 end
             endcase
         end

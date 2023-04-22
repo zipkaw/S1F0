@@ -1,8 +1,0 @@
-module DECODE #(
-    parameter DATA_W = 14, 
-    parameter ADDR_W = 12
-) (
-    
-);
-    
-endmodule

@@ -1,7 +1,9 @@
 `timescale 1ps/1ps
-`include "../memory/rom.v"
-`include "./commands_rom.v"
-`include "./READ_ROM.v"
+`include "/home/plantator/SIFO/course_work/verilog_files/memory/rom.v"
+`include "/home/plantator/SIFO/course_work/verilog_files/memory/ram.v"
+`include "/home/plantator/SIFO/course_work/verilog_files/memory/mem_resolver.v"
+`include "../commands_rom.v"
+`include "../READ_ROM.v"
 
 module pip_control;
     localparam DATA_W = 14;
@@ -9,21 +11,41 @@ module pip_control;
 
     reg clk, reset;
     wire [DATA_W - 1:0] data_in;
-    wire [DATA_W*2 - 1:0] data_out;
+    wire [DATA_W - 1:0] data_GPRin;
+    wire [DATA_W - 1:0] data_out;
+    wire [DATA_W*2 - 1:0] command_out;
     wire [ADDR_W - 1:0] addr_out;
-    wire rom_rd;
     wire comm_write;
     wire comm_read;
     wire pause_READ;
     wire pause_DECODE;
+    wire rom_rd_garant;
+    wire ram_garant_rd;
+    wire ram_garant_wr;
+    wire [3:0] opcode;
+    wire GPR_rd;
+    wire [ADDR_W-1:0] addr_GPR;
 
     pipelined_control control(
         .clk(clk),
         .reset(reset),
+
         .addr_out(addr_out),
-        .rom_rd(rom_rd),
+        .data_in(data_in),
+        .command_in(command_out),
         .comm_write(comm_write),
-        .pause_READ(pause_READ)
+        .comm_read(comm_read),
+        .pause_READ(pause_READ), 
+        .pause_DECODE(pause_DECODE),
+
+        .rom_garant_rd(rom_rd_garant),
+        .ram_garant_rd(ram_garant_rd)
+
+        .GPR_rd(GPR_rd),
+        .addr_GPRin(addr_GPRin),
+        .data_GPRin(data_GPRin),
+
+        .opcode(opcode),      
     );
 
     commands_rom rom_reg(
@@ -32,16 +54,46 @@ module pip_control;
         .command_in(data_in),
         .comm_write(comm_write), 
         .comm_read(comm_read), 
-        .command_out(data_out),
+        .command_out(command_out),
         .pause_READ(pause_READ), 
-	.pause_DECODE(pause_DECODE)
+	    .pause_DECODE(pause_DECODE)
+    );
+
+    commands_ram ram_reg(
+        .clk, 
+        .reset,
+        .data_in,
+
+        .data_out,
+        .pause_DECODE,
+        .pause_WRITE
     );
 	 
-    rom ROM(.address(addr_out),
-            .clk(clk), 
-            .rden(rom_rd),
-            .data(data_in)); 
+    rom ROM(
+        .address(addr_out),
+        .clk(clk), 
+        .rden(rom_rd_garant),
+        .data(data_in)
+        ); 
+    
+    ram RAM(
+       .address(addr_out),
+       .clk(clk), 
+       .data(data_out),
+       .wren(1'b0),
+       .rden(ram_garant_rd),
+       .q(data_in)
+       );
 
+    GPR GPR(
+        .clk(clk),
+        .address_in(12'd0), 
+        .address_out(addr_GPRin), 
+        .data_in(12'd0), 
+        .data_out(data_GPRin), 
+        .GPR_rd(GPR_rd), 
+        .GPR_wr(1'b0)
+    );
 
     initial begin
         clk <= 0;
@@ -58,7 +110,7 @@ module pip_control;
 		  #35;
 	 end
     initial begin
-        #1000 $stop;
+        #700 $stop;
     end
     always begin
         #5

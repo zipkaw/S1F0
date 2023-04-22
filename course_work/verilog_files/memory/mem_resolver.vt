@@ -1,0 +1,100 @@
+`timescale 1ps / 1ps
+
+module test_mem_resolver;
+
+    // Inputs
+    reg clk;
+    reg reset;
+    reg rom_rd;
+    reg ram_rd;
+    reg ram_wr;
+    
+    // Outputs
+    wire rom_garant;
+    wire ram_garant_rd;
+    wire ram_garant_wr;
+
+    // Instantiate the unit under test
+    mem_resolver dut (
+        .clk(clk),
+        .reset(reset),
+        .rom_rd(rom_rd),
+        .ram_rd(ram_rd),
+        .ram_wr(ram_wr),
+        .rom_garant(rom_garant),
+        .ram_garant_rd(ram_garant_rd),
+        .ram_garant_wr(ram_garant_wr)
+    );
+
+    // Clock generation
+    always begin
+	    #5 clk = ~clk;
+    end
+
+    initial begin
+        // Reset simulation
+        reset = 1;
+        clk = 0;
+        rom_rd = 0;
+        ram_rd = 0;
+        ram_wr = 0;
+        #10 reset = 0;
+
+        // Test 1: Read from ROM
+        rom_rd = 1;
+        ram_rd = 0;
+        ram_wr = 0;
+        #20 
+        rom_rd = 0;
+        #10
+        // Test 2: Read from RAM
+        rom_rd = 0;
+        ram_rd = 1;
+        ram_wr = 0;
+        #20 
+        ram_rd = 0;
+        #10 
+
+        // Test 3: Write to RAM
+        rom_rd = 0;
+        ram_rd = 0;
+        ram_wr = 1;
+        #20
+        ram_wr = 0;
+        #10 
+
+        // Test 4: Read and Write to RAM simultaneously
+        rom_rd = 0;
+        ram_rd = 1;
+        ram_wr = 1;
+        #20 
+        ram_rd = 0;
+        #10 
+	ram_wr = 0;
+	#10
+        ram_wr = 1;
+	rom_rd = 0;
+        ram_rd = 1;
+        #20
+	ram_wr = 1;
+	rom_rd = 1;
+        ram_rd = 1;
+	#20
+	ram_wr = 1;
+	rom_rd = 1;
+        ram_rd = 0;
+	#20
+	ram_wr = 1;
+	rom_rd = 1;
+        ram_rd = 0;
+	#20
+	ram_wr = 1;
+	rom_rd = 0;
+        ram_rd = 0;
+	
+    end
+    initial begin
+        #300 $stop;
+    end
+
+endmodule

@@ -6,6 +6,7 @@ module DECODE #(
     input clk, reset,
     input [DATA_W*2 - 1:0] command_in,
     input pause_DECODE,
+    input pause_WRITE,
     output reg comm_read,
 
     input ram_garant_rd,
@@ -17,7 +18,10 @@ module DECODE #(
 
     output reg GPR_rd,
     input [DATA_W - 1:0] data_GPRin,
-    output reg [ADDR_W - 1:0] addr_GPRin
+    output reg [ADDR_W - 1:0] addr_GPRin,
+
+    output reg [DATA_W+ADDR_W + 4 - 1 : 0] complex_data,
+    output reg data_write
 );
     reg [DATA_W-1:0] commands[0:1];
     localparam READ_COMM_LAT = 1, WRITE_COMM_LAT = 1;
@@ -28,10 +32,10 @@ module DECODE #(
     reg [3:0] latency_counter;
     reg [3:0] stage;
     reg wait_sig; 
-    reg data_write;
+    // reg data_write;
 
     /*4 is len of opcode*/
-    reg [DATA_W+ADDR_W + 4 - 1 : 0] complex_data;
+    // reg [DATA_W+ADDR_W + 4 - 1 : 0] complex_data;
     reg [DATA_W-1:0] data;
     reg [ADDR_W-1:0] address;
 
@@ -44,7 +48,7 @@ module DECODE #(
             wait_sig <= 0;
             ram_rd <= 0;
             addr_out <= 12'bzzzzzzzzzzzz;
-        end else begin 
+        end else if(pause_DECODE == 0) begin
             if(latency_counter != 0 && wait_sig == 0) begin
                 latency_counter <= latency_counter-1; 
             end
@@ -60,34 +64,32 @@ module DECODE #(
                 READ_COMM: begin
                     state <= WRITE_COMM;
                     latency_counter <=WRITE_COMM_LAT;
+                    comm_read <= 1'b1;
                 end
                 WRITE_COMM: begin
-                    if(latency_counter == 0) begin
-                        comm_read <= 1'b0; 
-                        state <= DECODE;
-                        latency_counter <=DECODE_LAT;
-                    end else begin
-                        comm_read <= 1'b1;
-                        commands[0] <= command_in[DATA_W-1:0];
-                        commands[1] <= command_in[DATA_W*2-1:DATA_W];    
-                    end
+                    state <= DECODE;
+                    latency_counter <=DECODE_LAT;
+                    commands[0] <= command_in[DATA_W-1:0];
+                    commands[1] <= command_in[DATA_W*2-1:DATA_W];    
+                    comm_read <= 1'b0;
                 end
                 DECODE: begin
                     if(latency_counter == 0) begin
                         state <= WRITE_DATA;
 						// latency_counter <=INIT_LAT;
+                        GPR_rd <= 1'b0;
                         ram_rd <= 1'b0;
                         addr_out <= 12'bzzzzzzzzzzzz;
+                        addr_GPRin <= 12'bzzzzzzzzzzzz;
                     end else begin
                         opcode <= commands[0][DATA_W-1:DATA_W-4];
-                        case(opcode):
+                        case(opcode)
                             `OP_MOV_SR: begin
-                                address <= {command[0][DATA_W - 9:0], command[1][DATA_W - 1: DATA_W - 6]};
+                                address <= {commands[0][DATA_W - 9:0], commands[1][DATA_W - 1: DATA_W - 6]};
                                 data <= data_GPRin; 
-                                addr_GPRin <= {command[0][DATA_W - 5: DATA_W - 8], 8'dxxxxxxxx};;
+                                addr_GPRin <= {commands[0][DATA_W - 5: DATA_W - 8], 8'b00000000};
                                 GPR_rd <= 1'b1;
                             end
-                            
                             // ram_rd <= 1'b1;
                             // if(ram_garant_rd == 1) begin
                             //     wait_sig <= 0;
@@ -108,5 +110,4 @@ module DECODE #(
             endcase
         end
     end
-
 endmodule

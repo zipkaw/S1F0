@@ -15,12 +15,15 @@ module pipelined_control #(
     
     output GPR_rd,
     output [ADDR_W-1:0] addr_GPRin,
-    input [DATA_W - 1:0] data_GPRin
+    input [DATA_W - 1:0] data_GPRin,
     
     output [3:0] opcode,
+
+    output [DATA_W+ADDR_W + 4 - 1 : 0] complex_data,
+    output data_write
 );
     wire rom_rd, ram_rd, ram_wr;
-    assign ram_wr = 1'bx;
+    assign ram_wr = 1'bx; 
     /*
     first step of pipeline 
     read rom and write commands
@@ -45,6 +48,7 @@ module pipelined_control #(
         .reset(reset),
 
         .pause_DECODE(pause_DECODE),
+        .pause_WRITE(pause_WRITE),
         .comm_read(comm_read),
         .command_in(command_in),
 		
@@ -57,7 +61,10 @@ module pipelined_control #(
 
         .data_GPRin(data_GPRin),
         .GPR_rd(GPR_rd),
-        .addr_GPRin(addr_GPRin)
+        .addr_GPRin(addr_GPRin),
+
+        .complex_data(complex_data),
+        .data_write(data_write)
     );
 
     mem_resolver mem_resolver(

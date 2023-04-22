@@ -3,13 +3,13 @@ module commands_ram #(
     parameter REGS = 16
 ) (
     input clk, reset,
-    input [DATA_W-1] data_in,
-    input comm_write;
-    input comm_read;
+    input [DATA_W-1:0] data_in,
+    input comm_write,
+    input comm_read,
 
-    output [DATA_W-1] data_out,
+    output reg [DATA_W-1:0] data_out,
     output reg pause_DECODE,
-    output reg pause_WRITE,
+    output reg pause_WRITE
 );
     /*
         DAO(data addr opcode) :
@@ -22,6 +22,7 @@ module commands_ram #(
     reg [3:0] to_read_command; 
 
     `define data_len 30
+    `define x30 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 	integer i;
     initial begin
 		pause_WRITE <= 1;
@@ -48,16 +49,16 @@ module commands_ram #(
         end else begin
             if(comm_write) begin
                 if(DAO[to_write_command][0] == 1'b0) begin
-                    pause_WRITE <= 1'b0;
+                    pause_DECODE <= 1'b0;
                     DAO[to_write_command] <= {data_in, 1'b1};
                     to_write_command <= 1 + to_write_command;
                 end else begin
-                    pause_WRITE <= 1'b1;
+                    pause_DECODE <= 1'b1;
                 end
             end
             if(comm_read == 1'b1) begin
                 if(DAO[to_read_command][0] == 1'b1)begin
-                    command_out <= {DAO[DATA_W-1:0]}; 
+                    data_out <= {DAO[to_read_command][DATA_W-1:0]}; 
                     DAO[to_read_command]   <= {30'b`x30, 1'b0};
                     to_read_command <= 2 + to_read_command; 
                 end

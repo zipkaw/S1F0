@@ -23,12 +23,11 @@ module pip_control;
     wire comm_write;
     wire comm_read;
     wire pause_READ;
-
+    wire pause_WRITE;
     wire pause_DECODE;
 
-    wire pause_WRITE;
     wire [DATA_W+ADDR_W + 4 - 1 : 0] complex_data;
-    wire [DATA_W+ADDR_W + 4 - 1 : 0] complex_data_to_read;
+    wire [DATA_W+ADDR_W + 4 - 1 : 0] DAO;
     wire data_write;
     wire data_read;
 
@@ -36,32 +35,42 @@ module pip_control;
 
     wire [DATA_W - 1:0] data_GPRin;
     wire [DATA_W - 1:0] data_GPRout;
+    wire [ADDR_W - 1:0] addr_GPRout;
     wire [ADDR_W-1:0] addr_GPRin;
     wire GPR_rd;
+    wire GPR_wr;
 
     pipelined_control control(
         .clk(clk),
         .reset(reset),
 
-        .addr_out(addr_out),
-        .data_in(data_in),
         .command_in(command_out),
         .comm_write(comm_write),
         .comm_read(comm_read),
         .pause_READ(pause_READ), 
         .pause_DECODE(pause_DECODE),
+        .pause_WRITE(pause_WRITE),
 
+        .addr_out(addr_out),
+        .data_in(data_in),
+        .data_out(data_out),
         .rom_garant_rd(rom_rd_garant),
         .ram_garant_rd(ram_garant_rd),
+        .ram_garant_wr(ram_garant_wr),
 
         .GPR_rd(GPR_rd),
         .addr_GPRin(addr_GPRin),
         .data_GPRin(data_GPRin),
+        .GPR_wr(GPR_wr),
+        .addr_GPRout(addr_GPRout),
+        .data_GPRout(data_GPRout),
 
         .opcode(opcode),
 
         .complex_data(complex_data),
-        .data_write(data_write) 
+        .data_write(data_write) ,
+        .DAO(DAO),
+        .data_read(data_read)
     );
 
     commands_rom rom_reg(
@@ -79,7 +88,7 @@ module pip_control;
         .clk(clk), 
         .reset(reset),
         .data_in(complex_data),
-        .data_out(complex_data_to_read),
+        .data_out(DAO),
         .comm_write(data_write),
         .comm_read(data_read),
         .pause_DECODE(pause_DECODE),
@@ -97,7 +106,7 @@ module pip_control;
        .address(addr_out),
        .clk(clk), 
        .data(data_out),
-       .wren(1'b0),
+       .wren(ram_garant_wr),
        .rden(ram_garant_rd),
        .q(data_in)
        );

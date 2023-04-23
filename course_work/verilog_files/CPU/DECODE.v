@@ -48,6 +48,7 @@ module DECODE #(
             wait_sig <= 0;
             ram_rd <= 0;
             addr_out <= 12'bzzzzzzzzzzzz;
+            GPR_rd <= 0;
         end else if(pause_DECODE == 0) begin
             if(latency_counter != 0 && wait_sig == 0) begin
                 latency_counter <= latency_counter-1; 

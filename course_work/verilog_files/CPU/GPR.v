@@ -28,7 +28,7 @@ module GPR #(
     input [ADDR_W - 1:0] address_out, 
     input [DATA_W - 1:0] data_in, 
     output reg [DATA_W - 1:0] data_out, 
-    input GPR_rd, 
+    input GPR_rd,
     input GPR_wr
 );
     reg [DATA_W - 1:0] registers[REG_N - 1:0]; 

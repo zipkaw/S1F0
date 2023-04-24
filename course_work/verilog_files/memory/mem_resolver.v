@@ -30,7 +30,7 @@ module mem_resolver (
             busy_state <= 0;
         end else begin
             if(busy_state == 2'b00) begin
-                casex ({rom_rd, ram_rd, 1'b0})
+                casex ({rom_rd, ram_rd, ram_wr})
                 3'b1xx: begin
                     busy_state <= 2'd1;
                     rom_garant <= 1; 

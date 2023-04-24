@@ -34,7 +34,7 @@ module commands_ram #(
     
  
     always @(negedge comm_write) begin
-        if ({DAO[0][0], DAO[0][0]}== 2'b11) begin
+        if (DAO[0][0]== 1'b1) begin
             pause_WRITE <= 0;
         end 
     end
@@ -42,6 +42,15 @@ module commands_ram #(
         1: means data writed;
         0: means data readed(or hasn't been writed yet);
     */
+
+    always @(*) begin
+        if (DAO[to_read_command][0]== 1'b0) begin
+            pause_WRITE <= 1;
+        end else begin
+            pause_WRITE <= 0;
+        end
+    end
+
     always @(negedge clk) begin
         if(reset) begin
             to_write_command <= 4'd0;
@@ -56,11 +65,11 @@ module commands_ram #(
                     pause_DECODE <= 1'b1;
                 end
             end
-            if(comm_read == 1'b1) begin
+            if(comm_read == 1'b1 && pause_WRITE == 0) begin
                 if(DAO[to_read_command][0] == 1'b1)begin
-                    data_out <= {DAO[to_read_command][DATA_W-1:0]}; 
+                    data_out <= {DAO[to_read_command][DATA_W:1]}; 
                     DAO[to_read_command]   <= {30'b`x30, 1'b0};
-                    to_read_command <= 2 + to_read_command; 
+                    to_read_command <= 1 + to_read_command; 
                 end
             end
         end

@@ -35,7 +35,7 @@ module GPR #(
     localparam reg_offset = ADDR_W - 1;
     always @(*) begin
         if (GPR_wr) begin
-            registers[address_in[4:0]] <= data_in; 
+            registers[address_in[ADDR_W-1:ADDR_W - REG_W]] <= data_in; 
         end
         else if (GPR_rd) begin
             data_out <= registers[address_out[ADDR_W - 1: ADDR_W - REG_W]] + 

@@ -6,7 +6,6 @@ module DECODE #(
     input clk, reset,
     input [DATA_W*2 - 1:0] command_in,
     input pause_DECODE,
-    input pause_WRITE,
     output reg comm_read,
 
     input ram_garant_rd,
@@ -20,13 +19,19 @@ module DECODE #(
     input [DATA_W - 1:0] data_GPRin,
     output reg [ADDR_W - 1:0] addr_GPRin,
 
+    input [DATA_W-1:0] data_ALUresult,
+    output reg [DATA_W - 1:0] data_ALU0, data_ALU1,
+
+
     output reg [DATA_W+ADDR_W + 4 - 1 : 0] complex_data,
     output reg data_write
+
+
 );
     reg [DATA_W-1:0] commands[0:1];
     localparam READ_COMM_LAT = 1, WRITE_COMM_LAT = 1;
-    localparam DECODE_LAT = 4, INIT_LAT = 2; 
-    localparam  INIT=0, READ_COMM=1, DECODE = 3, WRITE_COMM=2, WRITE_DATA=4;
+    localparam DECODE_LAT = 1, INIT_LAT = 2, EXEC_LAT = 4;
+    localparam  INIT=0, READ_COMM=1, DECODE = 3, WRITE_COMM=2, EXEC = 4, WRITE_DATA=5;
 
     reg [3:0] state;
     reg [3:0] latency_counter;
@@ -58,7 +63,6 @@ module DECODE #(
                     if(latency_counter == 0) begin
                         state <= READ_COMM;
                     end
-
                     data_write <= 1'b0;
 
                 end
@@ -69,21 +73,24 @@ module DECODE #(
                 end
                 WRITE_COMM: begin
                     state <= DECODE;
-                    latency_counter <=DECODE_LAT;
+                    //latency_counter <=DECODE_LAT;
                     commands[0] <= command_in[DATA_W-1:0];
                     commands[1] <= command_in[DATA_W*2-1:DATA_W];    
                     comm_read <= 1'b0;
                 end
                 DECODE: begin
+                    state <= EXEC;
+                    latency_counter <= EXEC_LAT;
+                    opcode <= commands[0][DATA_W-1:DATA_W-4];
+                end
+                EXEC: begin
                     if(latency_counter == 0) begin
                         state <= WRITE_DATA;
-						// latency_counter <=INIT_LAT;
                         GPR_rd <= 1'b0;
                         ram_rd <= 1'b0;
                         addr_out <= 12'bzzzzzzzzzzzz;
                         addr_GPRin <= 12'bzzzzzzzzzzzz;
                     end else begin
-                        opcode <= commands[0][DATA_W-1:DATA_W-4];
                         case(opcode)
                             `OP_MOV_SR: begin
                                 address <= {commands[0][DATA_W - 9:0], commands[1][DATA_W - 1: DATA_W - 6]};
@@ -91,14 +98,53 @@ module DECODE #(
                                 addr_GPRin <= {commands[0][DATA_W - 5: DATA_W - 8], 8'b00000000};
                                 GPR_rd <= 1'b1;
                             end
-                            // ram_rd <= 1'b1;
-                            // if(ram_garant_rd == 1) begin
-                            //     wait_sig <= 0;
-                            //     addr_out <= {commands[0][DATA_W - 9:0], commands[1][DATA_W - 1: DATA_W - 6]};
-                            //     data <= data_in;
-                            // end else begin
-                            //     wait_sig <= 1;
-                            // end
+                            `OP_MOV_SA: begin
+                                ram_rd <= 1'b1;
+                                if(ram_garant_rd == 1) begin
+                                    addr_out <= {commands[0][DATA_W - 9:0], commands[1][DATA_W - 1: DATA_W - 6]};
+                                    data <= data_in;
+                                    address <= {commands[0][DATA_W - 5: DATA_W - 8], 8'd0};
+                                    wait_sig <= 0;
+                                end else begin 
+                                    wait_sig <= 1; 
+                                end
+                            end
+                            `OP_MOV_BIO: begin 
+                                GPR_rd <= 1'b1;
+                                ram_rd <= 1'b1;
+                                addr_GPRin <= {commands[0][DATA_W - 5:0], commands[1][DATA_W - 1:DATA_W - 2]};
+                                if(ram_garant_rd == 1) begin
+                                    addr_out <= data_GPRin;
+                                    data <= data_in;
+                                    address <= {commands[1][DATA_W - 3 : 0]}; 
+                                    wait_sig <= 0;
+                                end else begin 
+                                    wait_sig <= 1; 
+                                end
+                            end 
+                            `OP_INC_SR: begin
+                                GPR_rd <= 1'b1;
+                                addr_GPRin <= {commands[0][DATA_W - 5: DATA_W - 8], 8'b00000000};
+                                data_ALU0 <= data_GPRin;
+
+                                data <= data_ALUresult;
+                                address <= {commands[0][DATA_W - 5: DATA_W - 8], 8'b00000000};
+                            end
+                            `OP_INC_BIO: begin
+                                GPR_rd <= 1'b1;
+                                ram_rd <= 1'b1;
+                                addr_GPRin <= {commands[0][DATA_W - 5:0], commands[1][DATA_W - 1:DATA_W - 2]};
+                                if(ram_garant_rd == 1) begin
+                                    addr_out <= data_GPRin;
+                                    address <= {addr_out};
+                                    data_ALU0 <= data_in;
+                                    data <= data_ALUresult;
+                                    wait_sig <= 0;
+                                end else begin 
+                                    wait_sig <= 1; 
+                                end
+                            end
+
                         endcase
                     end
                 end

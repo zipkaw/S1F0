@@ -22,6 +22,9 @@ module pipelined_control #(
     output GPR_wr,
     output [ADDR_W-1:0] addr_GPRout,
     input [DATA_W - 1:0] data_GPRout,
+
+    output [DATA_W-1:0] data_ALU1, data_ALU0,
+    input [DATA_W-1:0] data_ALUresult,
     
     output [3:0] opcode,
 
@@ -56,7 +59,7 @@ module pipelined_control #(
         .reset(reset),
 
         .pause_DECODE(pause_DECODE),
-        .pause_WRITE(pause_WRITE),
+
         .comm_read(comm_read),
         .command_in(command_in),
 		
@@ -71,6 +74,10 @@ module pipelined_control #(
         .GPR_rd(GPR_rd),
         .addr_GPRin(addr_GPRin),
 
+        .data_ALU0(data_ALU0), 
+        .data_ALU1(data_ALU1), 
+        .data_ALUresult(data_ALUresult),
+
         .complex_data(complex_data),
         .data_write(data_write)
     );
@@ -80,6 +87,7 @@ module pipelined_control #(
         .reset(reset),
         .DAO(DAO),
         .data_read(data_read),
+        .pause_WRITE(pause_WRITE),
         
         .GPR_wr(GPR_wr), 
         .data_GPRout(data_GPRout),

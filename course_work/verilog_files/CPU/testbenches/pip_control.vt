@@ -5,6 +5,7 @@
 `include "../commands_ram.v"
 `include "../commands_rom.v"
 `include "../GPR.v"
+`include "../ALU.v"
 `include "../READ_ROM.v"
 
 module pip_control;
@@ -40,6 +41,8 @@ module pip_control;
     wire GPR_rd;
     wire GPR_wr;
 
+    wire [DATA_W-1:0] data_ALU1, data_ALU0, data_ALUresult;
+
     pipelined_control control(
         .clk(clk),
         .reset(reset),
@@ -64,6 +67,10 @@ module pip_control;
         .GPR_wr(GPR_wr),
         .addr_GPRout(addr_GPRout),
         .data_GPRout(data_GPRout),
+
+        .data_ALU0(data_ALU0), 
+        .data_ALU1(data_ALU1), 
+        .data_ALUresult(data_ALUresult),
 
         .opcode(opcode),
 
@@ -113,12 +120,19 @@ module pip_control;
 
     GPR GPR(
         .clk(clk),
-        .address_in(12'd0), 
+        .address_in(addr_GPRout), 
         .address_out(addr_GPRin), 
         .data_in(data_GPRout), 
         .data_out(data_GPRin), 
         .GPR_rd(GPR_rd), 
-        .GPR_wr(1'b0)
+        .GPR_wr(GPR_wr)
+    );
+
+    ALU ALU(
+        .data0(data_ALU0), 
+        .data1(data_ALU1), 
+        .opcode(opcode),
+        .result(data_ALUresult)
     );
 
     initial begin
@@ -136,7 +150,7 @@ module pip_control;
 		  #35;
 	 end
     initial begin
-        #700 $stop;
+        #1500 $stop;
     end
     always begin
         #5

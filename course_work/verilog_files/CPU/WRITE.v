@@ -75,7 +75,11 @@ always @(posedge clk) begin
                     `OP_MOV_BIO, 
                     `OP_INC_BIO, 
                     `OP_XOR_SR,
-                    `OP_XOR_BIO: begin
+                    `OP_XOR_BIO,
+                    `OP_NAND_BIO,
+                    `OP_NAND_SR,
+                    `OP_SRA_BIO,
+                    `OP_SRA_SR: begin
                         ram_wr <= 1'b1;
                         if(ram_garant_wr == 1) begin
                             wait_sig <= 0;

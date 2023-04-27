@@ -44,10 +44,9 @@ module GPR #(
         end
     end
 
-    always @(posedge clk) begin
-        registers[`REG_F] = registers[`REG_F] ^ 14'b00000000000001;
-
-    end
+//    always @(posedge clk) begin
+//        registers[`REG_F] <= registers[`REG_F] ^ 14'b00000000000001;
+//    end
 
     initial begin
         $readmemh("GPR.mem", registers);

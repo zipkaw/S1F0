@@ -169,7 +169,7 @@ module pip_control;
 		  #35;
 	 end
     initial begin
-        #1500 $stop;
+        #7000 $stop;
     end
     always begin
         #5

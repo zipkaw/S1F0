@@ -32,7 +32,7 @@ module DECODE #(
     reg [DATA_W-1:0] commands[0:1];
     localparam READ_COMM_LAT = 1, WRITE_COMM_LAT = 1;
     localparam DECODE_LAT = 1, INIT_LAT = 2, EXEC_LAT = 5;
-    localparam  INIT=0, READ_COMM=1, DECODE = 3, WRITE_COMM=2, EXEC = 4, WRITE_DATA=5;
+    localparam  INIT=0, READ_COMM=1, DECODE = 3, WRITE_COMM=2, EXEC = 4, WRITE_DATA=5, HLT = 6;
 
     reg [3:0] state;
     reg [3:0] latency_counter;
@@ -200,6 +200,9 @@ module DECODE #(
                                 data <= data_stack_pop;
                                 address <= {commands[0][DATA_W - 5:0], commands[1][DATA_W - 1:DATA_W - 2]};
                             end
+                            `OP_HLT: begin
+                                state <= HLT;
+                            end
                         endcase
                     end
                 end
@@ -208,6 +211,9 @@ module DECODE #(
                     data_write <= 1'b1;
                     state <= INIT;
                     latency_counter <= INIT_LAT;
+                end
+                HLT: begin
+                    state <= HLT;
                 end
             endcase
         end

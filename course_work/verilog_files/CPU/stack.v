@@ -9,7 +9,7 @@ module stack #(parameter DATA_W = 14, VOLUME = 12)(
     reg [DATA_W - 1:0] data[VOLUME -1:0]; 
     reg [VOLUME - 1:0] pointer;
     
-	always @(posedge opcode) begin 
+	always @(posedge opcode[3]) begin 
 		 if (opcode == `OP_PUSH_R) begin
 		     pointer <= pointer + 1'd1;
 		 end 

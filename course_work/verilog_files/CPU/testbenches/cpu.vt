@@ -1,0 +1,31 @@
+`timescale 1ps/1ps
+`include "../cpu.v"
+
+module cputb;
+    localparam DATA_W = 14;
+    localparam ADDR_W = 12;
+
+    reg clk, reset;
+    cpu cpu(.clk(clk), .reset(reset));
+    initial begin
+        clk <= 0;
+		reset <= 0;
+	end
+
+    initial begin
+        #5 reset <= 0; 
+        #5 reset <= 1; 
+		#20 reset <= 0; 
+    end
+	 
+	 initial begin
+		  #35;
+	 end
+    initial begin
+        #7000 $stop;
+    end
+    always begin
+        #5
+        clk = ~clk; 
+    end
+endmodule

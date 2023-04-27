@@ -4,6 +4,7 @@
 `include "/home/plantator/SIFO/course_work/verilog_files/memory/mem_resolver.v"
 `include "../commands_ram.v"
 `include "../commands_rom.v"
+`include "../stack.v"
 `include "../GPR.v"
 `include "../ALU.v"
 `include "../READ_ROM.v"
@@ -42,6 +43,9 @@ module pip_control;
     wire GPR_wr;
 
     wire [DATA_W-1:0] data_ALU1, data_ALU0, data_ALUresult;
+    wire [ADDR_W-1:0] jmp_addr;
+
+    wire [DATA_W-1:0] data_stack_pop, data_stack_push;
 
     pipelined_control control(
         .clk(clk),
@@ -77,7 +81,12 @@ module pip_control;
         .complex_data(complex_data),
         .data_write(data_write) ,
         .DAO(DAO),
-        .data_read(data_read)
+        .data_read(data_read),
+
+        .jmp_addr(jmp_addr),
+
+        .data_stack_pop(data_stack_pop),
+        .data_stack_push(data_stack_push)
     );
 
     commands_rom rom_reg(
@@ -88,7 +97,9 @@ module pip_control;
         .comm_read(comm_read), 
         .command_out(command_out),
         .pause_READ(pause_READ), 
-	    .pause_DECODE(pause_DECODE)
+	    .pause_DECODE(pause_DECODE),
+
+        .jmp_addr(jmp_addr)
     );
 
     commands_ram ram_reg(
@@ -133,6 +144,14 @@ module pip_control;
         .data1(data_ALU1), 
         .opcode(opcode),
         .result(data_ALUresult)
+    );
+
+    stack stack(
+        .clk(clk),
+        .reset(reset), 
+        .opcode(opcode),
+        .push(data_stack_push), 
+        .pop(data_stack_pop)
     );
 
     initial begin

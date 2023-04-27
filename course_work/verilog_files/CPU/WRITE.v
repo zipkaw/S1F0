@@ -71,7 +71,11 @@ always @(posedge clk) begin
             end
             WR_MEM: begin
                 case (opcode)
-                    `OP_MOV_SR, `OP_MOV_BIO, `OP_INC_BIO: begin
+                    `OP_MOV_SR, 
+                    `OP_MOV_BIO, 
+                    `OP_INC_BIO, 
+                    `OP_XOR_SR,
+                    `OP_XOR_BIO: begin
                         ram_wr <= 1'b1;
                         if(ram_garant_wr == 1) begin
                             wait_sig <= 0;
@@ -82,7 +86,9 @@ always @(posedge clk) begin
                             wait_sig <= 1;
                         end
                     end
-                    `OP_MOV_SA, `OP_INC_SR: begin 
+                    `OP_MOV_SA, 
+                    `OP_INC_SR,
+                    `OP_POP_R: begin 
                         GPR_wr <= 1'b1; 
                         data_GPRout <= data;
                         addr_GPRout <= addr;

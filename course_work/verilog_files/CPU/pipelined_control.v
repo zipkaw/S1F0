@@ -31,8 +31,12 @@ module pipelined_control #(
     output [DATA_W+ADDR_W + 4 - 1 : 0] complex_data,
     output data_write,
     input [DATA_W+ADDR_W + 4 - 1 : 0] DAO,
-    output data_read
-    
+    output data_read,
+
+    input [ADDR_W -1:0] jmp_addr,
+
+    input [DATA_W-1:0] data_stack_pop,
+	output [DATA_W-1:0] data_stack_push
 );
     wire rom_rd, ram_rd, ram_wr;
     /*
@@ -47,7 +51,8 @@ module pipelined_control #(
         .command_write(comm_write),
         .addr_out(addr_out),
         .pause_READ(pause_READ),
-        .rom_rd_garant(rom_garant_rd)
+        .rom_rd_garant(rom_garant_rd),
+        .jmp_addr(jmp_addr)
     );
     /*
         second step is read 
@@ -79,7 +84,10 @@ module pipelined_control #(
         .data_ALUresult(data_ALUresult),
 
         .complex_data(complex_data),
-        .data_write(data_write)
+        .data_write(data_write),
+
+        .data_stack_pop(data_stack_pop),
+        .data_stack_push(data_stack_push)
     );
 
     WRITE WRITE(

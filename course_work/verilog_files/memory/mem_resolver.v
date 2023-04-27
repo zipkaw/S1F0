@@ -64,23 +64,4 @@ module mem_resolver (
         end
     end
 
-//    always @(negedge clk) begin
-//        if(busy_state != 2'b00) begin 
-//            casex ({rom_rd, ram_rd, ram_wr, busy_state})
-//                5'b0xx01: begin
-//                    rom_garant <= 0;
-//                    busy_state <= 2'b00;
-//                end
-//                5'bx0x10: begin
-//                    ram_garant_rd <= 0;
-//                    busy_state <= 2'b00;
-//                end
-//                5'bxx011: begin
-//                    ram_garant_wr <= 0;
-//                    busy_state <= 2'b00;
-//                end
-//            endcase
-//        end
-//    end
-
 endmodule

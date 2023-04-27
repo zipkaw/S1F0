@@ -1,5 +1,7 @@
+`include "./opcodes.v"
 module commands_rom #(
     parameter DATA_W = 14, 
+    parameter ADDR_W = 12,
     parameter REGS = 16
 ) (
     input clk, reset,
@@ -8,7 +10,9 @@ module commands_rom #(
 
     output reg [DATA_W*2-1:0] command_out,
     output reg pause_READ, 
-    output reg pause_DECODE
+    output reg pause_DECODE,
+
+    output reg [ADDR_W - 1:0] jmp_addr
 );
     /*
         data format {14 bytes of data },{0/1 byte of sign}
@@ -22,7 +26,11 @@ module commands_rom #(
     reg [1:0] latency_counter; 
     reg start_DECODE;
 	integer i;
+    reg [3:0] state_jmp;
+    reg [3:0] comm_jmp;
+    reg [ADDR_W-1:0] addr_to_jmp;
     initial begin
+        jmp_addr <= 12'bzzzzzzzzzzzz;
 		pause_READ <= 0;
 		pause_DECODE <= 1;
         start_DECODE <= 0;
@@ -35,9 +43,26 @@ module commands_rom #(
     always @(negedge comm_write) begin
         if ({commands[0][0], commands[0][0]}== 2'b11) begin
             pause_DECODE <= 0;
-        end 
-
+        end
+        state_jmp <= command_counter-2;
+        comm_jmp <= commands[state_jmp][DATA_W:DATA_W-3];
+        addr_to_jmp <= {commands[state_jmp][DATA_W - 9:1], commands[state_jmp+1][DATA_W:DATA_W - 5]};
     end
+    
+    always @(posedge clk) begin
+        case(comm_jmp)
+            `OP_JMP: begin
+                jmp_addr <= addr_to_jmp;
+            end
+            `OP_JNZ: begin
+                jmp_addr <= addr_to_jmp;
+            end
+            default: begin
+                jmp_addr <= 12'b111111111111; 
+            end
+        endcase
+    end
+    
 
     always @(negedge clk) begin
         if(reset) begin
